@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "shogi-data"
+version = "0.1.0"
+description = ""
+authors = ["Imoto Yasuhiro <soyiharu@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+tensorflow-datasets = "^4.9.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
