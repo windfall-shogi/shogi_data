@@ -8,13 +8,18 @@ from tensorflow_datasets.core.utils.lazy_imports_utils import tensorflow as tf
 from cshogi import HuffmanCodedPosAndEval
 
 
-class Builder(tfds.core.GeneratorBasedBuilder):
+class HCPEDataset(tfds.core.GeneratorBasedBuilder):
     """DatasetBuilder for shogi_data dataset."""
 
     VERSION = tfds.core.Version('1.0.0')
     RELEASE_NOTES = {
         '1.0.0': 'Initial release.',
     }
+
+    MANUAL_DOWNLOAD_INSTRUCTIONS = """
+    Register into https://example.org/login to get the data. Place the `data.zip`
+    file in the `manual_dir/`.
+    """
 
     def _info(self) -> tfds.core.DatasetInfo:
         """Returns the dataset metadata."""
@@ -29,7 +34,7 @@ class Builder(tfds.core.GeneratorBasedBuilder):
             # If there's a common (input, target) tuple from the
             # features, specify them here. They'll be used if
             # `as_supervised=True` in `builder.as_dataset`.
-            supervised_keys=('hcp', 'eval', 'best_move16', 'game_result'),
+            supervised_keys=('hcp', ('eval', 'best_move16', 'game_result')),
             homepage='https://dataset-homepage/',
         )
 
