@@ -22,9 +22,9 @@ class Builder(tfds.core.GeneratorBasedBuilder):
         return self.dataset_info_from_configs(
             features=tfds.features.FeaturesDict({
                 'hcp': tfds.features.Tensor(shape=[32], dtype=tf.uint8),
-                'eval': tfds.features.Scalar(dtype='int16'),
-                'best_move16': tfds.features.Scalar(dtype='uint16'),
-                'game_result': tfds.features.Scalar(dtype='uint8')
+                'eval': tfds.features.Scalar(dtype=tf.int16),
+                'best_move16': tfds.features.Scalar(dtype=tf.uint8),
+                'game_result': tfds.features.Scalar(dtype=tf.uint8)
             }),
             # If there's a common (input, target) tuple from the
             # features, specify them here. They'll be used if
