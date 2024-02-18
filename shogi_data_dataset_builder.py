@@ -1,11 +1,12 @@
 """shogi_data dataset."""
 from pathlib import Path
+from multiprocessing import Pool
 
 import cshogi
 import tensorflow_datasets as tfds
 import numpy as np
 from tensorflow_datasets.core.utils.lazy_imports_utils import tensorflow as tf
-from cshogi import HuffmanCodedPosAndEval
+from cshogi import HuffmanCodedPosAndEval, PackedSfenValue
 
 
 class HCPEDataset(tfds.core.GeneratorBasedBuilder):
@@ -36,6 +37,7 @@ class HCPEDataset(tfds.core.GeneratorBasedBuilder):
             # `as_supervised=True` in `builder.as_dataset`.
             supervised_keys=('hcp', ('eval', 'best_move16', 'game_result')),
             homepage='https://dataset-homepage/',
+            disable_shuffling=False
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
@@ -45,24 +47,66 @@ class HCPEDataset(tfds.core.GeneratorBasedBuilder):
 
         # TODO(shogi_data): Returns the Dict[split names, Iterator[Key, Example]]
         return {
-            'V7-1300hcpe': self._generate_examples(path / 'V7-1300hcpe')
+            # 'V7-1300hcpe': self._generate_examples(path / 'V7-1300hcpe'),
+            'suisho4t_2m': self._generate_examples(path / 'suisho4t_2m'),
+            'floodgate4200-validation': self._generate_examples(path / 'floodgate4200-validation'),
+            # 'shogi_suisho5_depth9-validation': self._generate_examples_packed(path / 'shogi_suisho5_depth9-validation'),
+            # 'shogi_suisho5_depth9': self._generate_examples_packed(path / 'shogi_suisho5_depth9')
         }
 
     def _generate_examples(self, path):
         """Yields examples."""
         # TODO(shogi_data): Yields (key, example) tuples from the dataset
-        count = 1000
-        for f in path.glob('*.hcpe'):
+        for v in self._generate_example_common(path, HuffmanCodedPosAndEval):
+            yield v
+
+    def _generate_examples_packed(self, path):
+        for v in self._generate_example_common(path, PackedSfenValue):
+            yield v
+
+    @staticmethod
+    def _generate_example_common(path, data_type):
+        if data_type == cshogi.PackedSfenValue:
+            hcp, score, best_move16, game_result = 'sfen', 'score', 'move', 'game_result'
+            ext = '.bin'
+        else:
+            hcp, score, best_move16, game_result = 'hcp', 'eval', 'bestMove16', 'gameResult'
+            ext = '.hcpe'
+
+        count = 1000000
+        for f in path.glob(f'*{ext}'):
             tmp = Path(f)
             size_in_bytes = tmp.stat().st_size
-            num_elements = size_in_bytes // HuffmanCodedPosAndEval.itemsize
-            for i in range(0, num_elements, count):
-                data = np.fromfile(f, dtype=cshogi.HuffmanCodedPosAndEval, count=count, offset=i)
-                for j, value in enumerate(data, start=i):
-                    # noinspection PyTypeChecker
-                    yield f'{tmp.stem}-{j:06d}', {
-                        'hcp': value['hcp'],
-                        'eval': value['eval'],
-                        'best_move16': value['bestMove16'],
-                        'game_result': value['gameResult']
-                    }
+            num_elements = size_in_bytes // data_type.itemsize
+
+            args = [(tmp, i, count, data_type) for i in range(0, num_elements, count)]
+            with Pool(8) as p:
+                for result in p.imap_unordered(convert, args):
+                    for r in result:
+                        yield r
+            # for i in range(0, num_elements, count):
+            #     data = np.fromfile(f, dtype=data_type, count=count, offset=i)
+            #     for j, value in enumerate(data, start=i):
+            #         # noinspection PyTypeChecker
+            #         yield f'{tmp.stem}-{j:08x}', {
+            #             'hcp': value[hcp],
+            #             'eval': value[score],
+            #             'best_move16': value[best_move16],
+            #             'game_result': value[game_result]
+            #         }
+
+
+def convert(args):
+    path, i, count, data_type = args
+    if data_type == cshogi.PackedSfenValue:
+        hcp, score, best_move16, game_result = 'sfen', 'score', 'move', 'game_result'
+    else:
+        hcp, score, best_move16, game_result = 'hcp', 'eval', 'bestMove16', 'gameResult'
+
+    data = np.fromfile(str(path), dtype=data_type, count=count, offset=i)
+    return [(f'{path.stem}-{j:08x}', {
+                'hcp': value[hcp],
+                'eval': value[score],
+                'best_move16': value[best_move16],
+                'game_result': value[game_result]
+            }) for j, value in enumerate(data, start=i)]
