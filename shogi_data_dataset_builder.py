@@ -47,10 +47,10 @@ class HCPEDataset(tfds.core.GeneratorBasedBuilder):
 
         # TODO(shogi_data): Returns the Dict[split names, Iterator[Key, Example]]
         return {
-            # 'V7-1300hcpe': self._generate_examples(path / 'V7-1300hcpe'),
-            'suisho4t_2m': self._generate_examples(path / 'suisho4t_2m'),
-            'floodgate4200-validation': self._generate_examples(path / 'floodgate4200-validation'),
-            # 'shogi_suisho5_depth9-validation': self._generate_examples_packed(path / 'shogi_suisho5_depth9-validation'),
+            'V7-1300hcpe-sub': self._generate_examples(path / 'V7-1300hcpe-sub'),
+            # 'suisho4t_2m': self._generate_examples(path / 'suisho4t_2m'),
+            # 'floodgate4200-validation': self._generate_examples(path / 'floodgate4200-validation'),
+            'shogi_suisho5_depth9-validation': self._generate_examples_packed(path / 'shogi_suisho5_depth9-validation'),
             # 'shogi_suisho5_depth9': self._generate_examples_packed(path / 'shogi_suisho5_depth9')
         }
 
@@ -79,21 +79,21 @@ class HCPEDataset(tfds.core.GeneratorBasedBuilder):
             size_in_bytes = tmp.stat().st_size
             num_elements = size_in_bytes // data_type.itemsize
 
-            args = [(tmp, i, count, data_type) for i in range(0, num_elements, count)]
-            with Pool(8) as p:
-                for result in p.imap_unordered(convert, args):
-                    for r in result:
-                        yield r
-            # for i in range(0, num_elements, count):
-            #     data = np.fromfile(f, dtype=data_type, count=count, offset=i)
-            #     for j, value in enumerate(data, start=i):
-            #         # noinspection PyTypeChecker
-            #         yield f'{tmp.stem}-{j:08x}', {
-            #             'hcp': value[hcp],
-            #             'eval': value[score],
-            #             'best_move16': value[best_move16],
-            #             'game_result': value[game_result]
-            #         }
+            # args = [(tmp, i, count, data_type) for i in range(0, num_elements, count)]
+            # with Pool(8) as p:
+            #     for result in p.imap_unordered(convert, args):
+            #         for r in result:
+            #             yield r
+            for i in range(0, num_elements, count):
+                data = np.fromfile(f, dtype=data_type, count=count, offset=i)
+                for j, value in enumerate(data, start=i):
+                    # noinspection PyTypeChecker
+                    yield f'{tmp.stem}-{j:08x}', {
+                        'hcp': value[hcp],
+                        'eval': value[score],
+                        'best_move16': value[best_move16],
+                        'game_result': value[game_result]
+                    }
 
 
 def convert(args):
