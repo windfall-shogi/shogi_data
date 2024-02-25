@@ -6,8 +6,11 @@ authors = ["Imoto Yasuhiro <soyiharu@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.11, <3.12"
 tensorflow-datasets = "^4.9.4"
+cshogi = "^0.8.4"
+tensorflow-io-gcs-filesystem = "0.31.0"
+tensorflow = "2.15.0"
 
 
 [build-system]
